@@ -140,6 +140,12 @@ class Preloader(metaclass=LogBase):
         self.sendcmd = self.mtk.port.mtk_cmd
 
     def init(self, maxtries=None, display=True):
+        # Check if device uses MTKv6 XML mode - skip traditional preloader init
+        if self.config.chipconfig.damode == DAmodes.XML:
+            self.info("MTKv6 XML mode - skipping traditional preloader init")
+            # For XML mode, we don't need traditional handshake
+            return True
+            
         if os.path.exists(os.path.join(self.mtk.config.hwparam_path, ".state")):
             try:
                 os.remove(os.path.join(self.mtk.config.hwparam_path, ".state"))
@@ -185,6 +191,26 @@ class Preloader(metaclass=LogBase):
                 self.config.hwver = val & 0xFFFF
                 self.config.init_hwcode(self.config.hwcode)
         self.config.init_hwcode(self.config.hwcode)
+
+        # For MTKv6 XML mode chips, skip traditional preloader commands
+        if self.config.chipconfig.damode == DAmodes.XML:
+            self.info("MTKv6 XML mode detected, skipping traditional preloader init...")
+            self.info("\tCPU:\t\t\t" + self.config.chipconfig.name + "(" + self.config.chipconfig.description + ")")
+            self.info("\tHW version:\t\t" + hex(self.config.hwver))
+            self.info("\tHW code:\t\t\t" + hex(self.config.hwcode))
+            # Set default target config for XML mode
+            self.config.target_config = {
+                "sbc": True,
+                "sla": True,
+                "daa": True,
+                "swjtag": False,
+                "epp": False,
+                "cert": True,
+                "memread": True,
+                "memwrite": False,
+                "cmd_c8": False
+            }
+            return True
 
         cpu = self.config.chipconfig.name
         if self.display:

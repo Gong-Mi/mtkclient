@@ -85,15 +85,52 @@ class DaHandler(metaclass=LogBase):
             return None
 
     def configure_da(self, mtk, preloader):
-        mtk.port.cdc.connected = mtk.port.cdc.connect()
-        if mtk.port.cdc.connected is None or not mtk.port.cdc.connected or mtk.serialportname is not None:
-            mtk.preloader.init()
+        # For MTKv6 XML mode, check if device uses XML protocol
+        # Some newer chips (MT6991, MT6985, etc.) use XML mode by default
+        xml_chips = [0x1357, 0x1296, 0x6991, 0x6985]  # DACodes that use XML mode
+        
+        # Try to detect chip type early for XML mode chips
+        if mtk.port.cdc.connected:
+            # Try to read hwcode directly from device
+            try:
+                mtk.port.cdc.set_fast_mode(True)
+                # Send GET_HW_CODE command
+                if mtk.port.usbwrite(b"\xFD"):
+                    val = mtk.port.rdword()
+                    hwcode = (val >> 16) & 0xFFFF
+                    if hwcode in xml_chips:
+                        self.info(f"Detected XML mode chip: {hex(hwcode)}")
+                        mtk.config.chipconfig.damode = DAmodes.XML
+                        mtk.config.hwcode = hwcode
+                        mtk.config.init_hwcode(hwcode)
+            except Exception:
+                pass
+            mtk.port.cdc.set_fast_mode(False)
+        
+        # For MTKv6 XML mode (damode == 6), skip preloader init
+        if mtk.config.chipconfig.damode == DAmodes.XML:
+            self.info("MTKv6 XML mode detected, skipping preloader init...")
+            mtk.config.target_config = {
+                "sbc": True,
+                "sla": True,
+                "daa": True,
+                "swjtag": False,
+                "epp": False,
+                "cert": True,
+                "memread": True,
+                "memwrite": False,
+                "cmd_c8": False
+            }
         else:
-            if mtk.serialportname is not None:
+            mtk.port.cdc.connected = mtk.port.cdc.connect()
+            if mtk.port.cdc.connected is None or not mtk.port.cdc.connected or mtk.serialportname is not None:
                 mtk.preloader.init()
-            if mtk.port.cdc.connected and os.path.exists(os.path.join(mtk.config.hwparam_path, ".state")):
-                mtk.daloader.reinit()
-                return mtk
+            else:
+                if mtk.serialportname is not None:
+                    mtk.preloader.init()
+                if mtk.port.cdc.connected and os.path.exists(os.path.join(mtk.config.hwparam_path, ".state")):
+                    mtk.daloader.reinit()
+                    return mtk
         if mtk.config.target_config is None:
             self.info("Please disconnect, start mtkclient and reconnect.")
             return None
