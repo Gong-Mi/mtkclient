@@ -1967,4 +1967,38 @@ hwconfig = {
         name="MT8696"
         # loader
     ),
+    0x6991: Chipconfig(
+        var1=0xA,
+        watchdog=0x1C010000,
+        uart=0x16000000,
+        brom_payload_addr=0x100A00,
+        da_payload_addr=0x201000,
+        pl_payload_addr=0x40200000,
+        # gcpu_base=0x1000D000,
+        # dxcc_base=0x1C807000,
+        sej_base=0x1800E000,
+        efuse_addr=0x13260000,
+        damode=DAmodes.XML,
+        dacode=0x1357,
+        has64bit=True,
+        name="MT6991/Z/CZB",
+        description="Dimensity 9400/9400+ (Redmi K80 Ultra)",
+        loader="MT6991/MTK_DA_v6.bin"
+    ),
+    0x1357: Chipconfig(
+        var1=0xA,
+        watchdog=0x1C010000,
+        uart=0x16000000,
+        brom_payload_addr=0x100A00,
+        da_payload_addr=0x201000,
+        pl_payload_addr=0x40200000,
+        sej_base=0x1800E000,
+        efuse_addr=0x13260000,
+        damode=DAmodes.XML,
+        dacode=0x1357,
+        has64bit=True,
+        name="MT6991/Z/CZB",
+        description="Dimensity 9400/9400+ (Redmi K80 Ultra)",
+        loader="MT6991/MTK_DA_v6.bin"
+    ),
 }
